@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="css/vex.css">
+    <link rel="stylesheet" href="css/vex-theme-os.css">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/easy-autocomplete.css"/>
+    <link rel="stylesheet" href="css/easy-autocomplete.themes.css"/>
+    <link rel="stylesheet" href="css/style.css"/>
+    <script src="js/jquery-3.6.0.js"></script>
+    <script src="js/vex.combined.js"></script>
+    <script src="js/jquery.easy-autocomplete.js"></script>
+    <script>
+        $(() => {
+            const preloader = $('#preloader');
+            $(document).ajaxStart(() => preloader.show());
+            $(document).ajaxStop(() => preloader.hide());
+
+            const url = 'https://restcountries.eu/rest/v2/all?fields=name;capital;flag';
+
+            $.get(url, countries => {
+                const options = {
+                    data: countries,
+                    getValue: 'name',
+                    theme: 'square',
+                    list: {match: {enabled: true}},
+                    template: {
+                        type: "iconLeft",
+                        fields: {
+                            iconSrc: "flag"
+                        },
+                    },
+                };
+
+                $('#countries').easyAutocomplete(options);
+            });
+
+            const show = (show) => {
+                show.on('click', () => {
+                    const input = $('#countries').val();
+                    const run = async () => {
+                        try{
+                            const url = 'https://restcountries.eu/rest/v2/name/' + input;
+                            countries = await fetch(url);
+                            const response = await countries.json();
+                            const array = response[0];
+                            const countriesList = response[0].borders;
+
+                            const promises = countriesList.map( async (country) => {
+                                const data = await fetch('https://restcountries.eu/rest/v2/alpha/' + country);
+                                const border = await data.json();
+                                return border;
+                            })
+                            const results = await Promise.all(promises);
+                            const ul = $('<ul>')
+
+                            results.forEach((repos, i) =>{
+                                const li = $('<li>');
+                                li.text(repos.name).css({display: 'block'});
+                                ul.append(li);
+                            });
+                            
+                        
+                            for (const key in array){
+                                if(!array.hasOwnProperty(key)){
+                                    continue;
+                                }
+
+                                let keyInner = '';
+
+                                switch (key) {
+                                    case 'name':
+                                        keyInner = 'Называние';
+                                        break;
+                                    case 'topLevelDomain':
+                                        keyInner = 'Домен верхнего уровня';
+                                        break;
+                                    case 'alpha2Code':
+                                        keyInner = 'Двузначный код';
+                                        break;
+                                    case 'alpha3Code':
+                                        keyInner = 'Трехзначный код';
+                                        break;
+                                    case 'callingCodes':
+                                        keyInner = 'Код страны телефонного номера';
+                                        break;
+                                    case 'capital':
+                                        keyInner = 'Столица';
+                                        break;
+                                    case 'altSpellings':
+                                        keyInner = 'Старое называние';
+                                        break;
+                                    case 'region':
+                                        keyInner = 'Регион';
+                                        break;
+                                    case 'subregion':
+                                        keyInner = 'Субрегион';
+                                        break;
+                                    case 'population':
+                                        keyInner = 'Население';
+                                        break;
+                                    case 'latlng':
+                                        keyInner = 'Геопозиция';
+                                        break;
+                                    case 'demonym':
+                                        keyInner = 'Демон';
+                                        break;
+                                    case 'area':
+                                        keyInner = 'Площадь';
+                                        break;
+                                    case 'timezones':
+                                        keyInner = 'Часовой пояс';
+                                        break;
+                                    case 'borders':
+                                        keyInner = 'Граничит с';
+                                        break;
+                                    case 'nativeName':
+                                        keyInner = 'Родное имя';
+                                        break;
+                                    case 'numericCode':
+                                        keyInner = 'Числовой код';
+                                        break;
+                                    case 'currencies':
+                                        keyInner = 'Валюта';
+                                        break;
+                                    case 'language':
+                                        keyInner = 'Язык';
+                                        break;
+                                    case 'translations':
+                                        keyInner = 'Переводы';
+                                        break;
+                                    case 'flag':
+                                        keyInner = 'Флаг';
+                                        break;
+                                    case 'regionalBlocs':
+                                        keyInner = 'Региональные блоки';
+                                        break;
+                                    default:
+                                        keyInner = key
+                                }
+                                let div = null;
+
+                                if(keyInner === 'Флаг'){
+                                    div = $('<div>Флаг: </div>').append($('<img>').attr('src', array[key]).css({width: '200px', height: '130px'}));
+                                    $('.main-block').append(div);
+                                    continue;
+                                }else if(keyInner === 'Граничит с'){
+                                    div = $('<div>').text('Граничит с').append(ul);
+
+                                    $('.main-block').append(div);
+                                    continue;
+                                }else if(array[key] instanceof Array){
+                                    console.log(array[key])
+                                    const divTExt = $('<div>').text(keyInner)
+                                    const innerArray = array[key]
+                                        for (const key in innerArray){
+                                            const divInner = $('<div>').text('     ' +innerArray[key]);
+                                                divTExt.append(divInner)
+                                        }
+                                        
+                                        $('.main-block').append(divTExt);
+                                   
+                                    continue;
+                                }
+
+                                div = $('<div>').text(keyInner + ' : ' + array[key]);
+                                $('.main-block').append(div);
+
+                            }
+                            
+                            
+                        }catch(e) {
+                            console.log('Error ', e)
+                        }
+                    }
+
+                    run();
+                    
+                });
+            };
+
+            show($('#btn'));
+
+        });
+    </script>
+    
+</head>
+<body>
+    <div id="preloader"></div>
+    <div class="main-block__choose-country">
+        <p>Choose your country: <input type="text" id="countries" class="main-block__country-input"/></p>
+        <button type="button" id="btn"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="paper-plane" class="svg-inline--fa fa-paper-plane fa-w-16" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="#fff" d="M476 3.2L12.5 270.6c-18.1 10.4-15.8 35.6 2.2 43.2L121 358.4l287.3-253.2c5.5-4.9 13.3 2.6 8.6 8.3L176 407v80.5c0 23.6 28.5 32.9 42.5 15.8L282 426l124.6 52.2c14.2 6 30.4-2.9 33-18.2l72-432C515 7.8 493.3-6.8 476 3.2z"></path></svg></button>
+    </div>
+    <div class="container">
+        <div class="main-block">
+
+        </div>
+    </div>
+</body>
+</html>
